@@ -1,6 +1,6 @@
 import cors from "cors";
 
-export const corsPolicy = {
+const corsPolicy = {
     origin: (origin, callback) => {
         //Da modificare quando il sito sarà finito, per ora localhost3000
         const allowedOrigins = ['http://localhost:3000'];
@@ -17,3 +17,5 @@ export const corsPolicy = {
     preflightContinue: false,
     optionsSuccessStatus: 204
 };
+
+export default cors(corsPolicy);

@@ -1,6 +1,5 @@
 import mysql from "mysql2/promise";
 
-
 const connection = await mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -8,6 +7,12 @@ const connection = await mysql.createConnection({
     database: process.env.DB_NAME,
 });
 
-console.log("✅ Connessione al database avviata!");
+try{
+    await connection.connect();
+    console.log("Connesso al database!");
+}
+catch (err) {
+    console.error("Errore di connessione al database:", err);
+}
 
 export default connection;
