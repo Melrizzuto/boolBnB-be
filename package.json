@@ -1,0 +1,17 @@
+{
+  "name": "template-express",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node --env.file=.env app.js",
+    "dev": "node --env-file=.env --watch app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0"
+  }
+}
