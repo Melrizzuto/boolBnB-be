@@ -2,25 +2,25 @@ import { Router } from "express";
 const router = Router();
 
 import {
-    index, show, store, update, destroy
-} from "../controllers/propertiesController";
+    addProperty,
+    searchProperties,
+    getProperitesDetails,
+    contactOwner
+} from "../controllers/PropertyController.js";
 
-//Rotte
+// Rotte
 
-//index - read all
-router.get("/", index);
+// Ricerca proprietà
+router.get("/", searchProperties);
 
-//show - read one
-router.get("/:id", show);
+// Dettagli proprietà
+router.get("/:id", getProperitesDetails);
 
-//store - create
-router.post("/", store);
+// Aggiunta proprietà
+router.post("/", addProperty);
 
-//update - total update 
-router.put("/:id", update);
+// Contattare il proprietario
+router.post("/:propertyId/contact", contactOwner);
 
-//destroy - delete
-router.delete("/:id", destroy);
-
-//export router
+// Export router
 export default router;
