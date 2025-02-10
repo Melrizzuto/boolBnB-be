@@ -4,12 +4,12 @@ const port = 3000;
 
 import errorsHandler from "./middlewares/errorsHandler.js";
 import notFound from "./middlewares/notFound.js";
-import corsPolicy from './middlewares/corsPolicy.js';
+// import corsPolicy from "./middlewares/corsPolicy.js";
 import router from "./routers/properties.js";
 
 app.use(express.static("public"));
 
-app.use(corsPolicy);
+// app.use(corsPolicy);
 
 app.use(express.json());
 
