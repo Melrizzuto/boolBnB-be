@@ -2,24 +2,6 @@ import connection from "../connection.js";
 import nodemailer from "nodemailer"
 import customError from "../classes/customError.js";
 
-/**
- * Aggiunge un nuovo immobile al database.
- * La richiesta deve contenere i seguenti campi:
- * - user_id: l'ID dell'utente proprietario
- * - title: il titolo dell'immobile
- * - num_rooms: il numero di stanze
- * - num_beds: il numero di letti
- * - num_bathrooms: il numero di bagni
- * - square_meters: la superficie dell'immobile in metri quadrati
- * - address: l'indirizzo dell'immobile
- * - image: l'immagine dell'immobile (facoltativa)
- * - property_type: il tipo di immobile (es. flat, house, etc.)
- * 
- * La funzione verifica la validità  dei dati e restituisce un errore 400 se i dati sono invalidi.
- * Inoltre, verifica che l'utente sia proprietario e restituisce un errore 403 se non lo .
- * Se l'operazione riesce, restituisce un messaggio di successo con codice di stato 201.
- * Se si verifica un errore durante l'operazione, restituisce un messaggio di errore con codice di stato 500.
- */
 export const addProperty = async (req, res, next) => {
     try {
         // Verifica presenza dati
@@ -193,44 +175,53 @@ export const getProperitesDetails = async (req, res, next) => {
 };
 
 export const contactOwner = async (req, res, next) => {
-    try {
+  try {
       const { propertyId } = req.params;
-      const { email, message, ownerEmail } = req.body;
-  
-      // Verifica che la proprietà esista
-      const propertyQuery = 'SELECT * FROM properties WHERE id = ?';
+      const { email, message } = req.body;
+
+      // Verifica che la proprietà esista e ottieni l'email del proprietario
+      const propertyQuery = `
+          SELECT p.id, u.email AS ownerEmail 
+          FROM properties p
+          JOIN user u ON p.user_id = u.id
+          WHERE p.id = ? AND u.user_type = 'proprietario'`;
       const [propertyRows] = await connection.execute(propertyQuery, [propertyId]);
-  
+
       if (propertyRows.length === 0) {
-        return next(new customError(404, 'Proprietà non trovata'));
+          return next(new customError(404, 'Proprietà non trovata o proprietario non valido'));
       }
-  
-      // Crea un trasportatore per inviare l'email (configurazione di Nodemailer)
+
+      const ownerEmail = propertyRows[0].ownerEmail;
+
+      // Inserisci il messaggio nel database
+      const insertMessageQuery = `
+          INSERT INTO messages (property_id, sender_email, message_text) 
+          VALUES (?, ?, ?)`;
+      await connection.execute(insertMessageQuery, [propertyId, email, message]);
+
+      // Configura il trasportatore per inviare l'email
       const transporter = nodemailer.createTransport({
-        service: 'gmail',  // Puoi cambiare il servizio di email se necessario
-        auth: {
-          user: process.env.EMAIL_USER,  // La tua email
-          pass: process.env.EMAIL_PASSWORD,  // La tua password o una password per app
-        },
+          service: 'gmail',
+          auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_PASS,
+          },
       });
-  
-      // Imposta il contenuto dell'email
+
+      // Configura l'email
       const mailOptions = {
-        from: email,
-        to: ownerEmail,
-        subject: `Nuovo messaggio riguardante l'immobile ${propertyRows[0].title}`,
-        text: message,
+          from: process.env.EMAIL_USER,
+          to: ownerEmail,
+          subject: 'Nuovo messaggio su BoolBnB',
+          text: `Hai ricevuto un nuovo messaggio da ${email}:\n\n"${message}"`,
       };
-  
+
       // Invia l'email
       await transporter.sendMail(mailOptions);
-  
-      // Risposta positiva
-      res.status(200).json({
-        message: 'Messaggio inviato con successo al proprietario!',
-      });
-    } catch (error) {
-      console.error('Errore nell\'invio del messaggio:', error);
-      next(new customError(500, 'Errore del server'));
-    }
-  };
+
+      res.status(200).json({ message: 'Messaggio inviato con successo' });
+
+  } catch (error) {
+      next(error);
+  }
+};

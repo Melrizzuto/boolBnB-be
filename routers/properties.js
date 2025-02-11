@@ -1,5 +1,4 @@
 import { Router } from "express";
-import reviewsRouter from "./reviews.js";
 const router = Router();
 
 import {
