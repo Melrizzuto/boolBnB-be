@@ -144,6 +144,7 @@ export const searchProperties = async (req, res, next) => {
     }
 };
 
+
 export const getProperitesDetails = async (req, res, next) => {
     try {
         const {id} = req.params;
@@ -160,12 +161,14 @@ export const getProperitesDetails = async (req, res, next) => {
             p.image,
             p.property_type,
             COUNT(r.id) AS num_reviews,
-            SUM(r.rating) AS total_votes,
-            GROUP_CONCAT(CONCAT(r.name, ': ', r.text) ORDER BY r.created_at DESC) AS reviews
+            IFNULL(SUM(r.rating), 0) AS total_votes,
+            GROUP_CONCAT(CONCAT(u.name, ': ', r.review_text) ORDER BY r.created_at DESC SEPARATOR ' || ') AS reviews
         FROM 
             properties p
         LEFT JOIN 
             reviews r ON p.id = r.property_id
+        LEFT JOIN 
+            user u ON r.user_id = u.id
         WHERE 
             p.id = ?
         GROUP BY 
