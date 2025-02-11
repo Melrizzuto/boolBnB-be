@@ -1,5 +1,5 @@
 import connection from "../connection.js";
-import customError from "../middlewares/customError.js";
+import customError from "../classes/customError.js";
 
 //fun.1 verifico se l utente ha già messo like a una proprietà 
 export function checkLike(req, res, next) {

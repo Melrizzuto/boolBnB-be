@@ -1,11 +1,11 @@
 import { Router } from "express";
-const likesRouter = Router();
-
 import {
     checkLike,
     toggleLike,
     getLikesCount
-} from "../controllers/LikesController";
+} from "../controllers/LikesController.js";
+
+const likesRouter = Router();
 
 // Rotta per verificare se un utente ha già messo like a una proprietà
 likesRouter.get("/check", checkLike);
