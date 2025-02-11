@@ -9,10 +9,10 @@ import {
 // Rotte recensioni
 
 // Ottenere recensioni di una proprietà
-reviewsRouter.get("/:propertyId/reviews", getReviews);
+reviewsRouter.get("/", getReviews);
 
 // Aggiungere una recensione a una proprietà
-reviewsRouter.post("/:propertyId/reviews", addReview);
+reviewsRouter.post("/", addReview);
 
 // Export router
 export default reviewsRouter;
