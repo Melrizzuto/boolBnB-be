@@ -47,7 +47,7 @@ export const addProperty = async (req, res, next) => {
         }
 
         // Verifica che utente sia proprietario:
-        const userQuery = "SELECT user_type FROM user WHERE id = ?";
+        const userQuery = "SELECT user_type FROM `user` WHERE id = ?";
         const [userRows] = await connection.execute(userQuery, [user_id]);
         
         if (userRows.length === 0 || userRows[0].user_type !== 'proprietario') {

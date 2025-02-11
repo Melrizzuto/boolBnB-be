@@ -1,5 +1,5 @@
 import { Router } from "express";
-const reviewsRouter = Router();
+const reviewsRouter = Router({ mergeParams: true });
 
 import {
     addReview,

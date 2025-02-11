@@ -46,13 +46,20 @@ export const addReview = async (req, res, next) => {
 };
 
 export const getReviews = async (req, res, next) => {
-    try{
-        const { propertyId } = req.params;
-        const query = 'SELECT * FROM reviews WHERE property_id = ? ORDER BY created_at DESC';
-        const [rows] = await connection.execute(query, [propertyId]);
-        res.status(200).json({ reviews: rows }); 
-    }
-    catch (error) {
+    try {
+        const { propertyId } = req.params; // Estrai propertyId dai parametri
+
+        const query = `
+            SELECT r.*, u.name 
+            FROM reviews r 
+            JOIN \`user\` u ON r.user_id = u.id 
+            WHERE r.property_id = ?
+        `;
+        
+        const [reviews] = await connection.execute(query, [propertyId]);
+        
+        res.status(200).json({ reviews });
+    } catch (error) {
         console.error("Errore nel recupero delle recensioni:", error);
         next(new customError(500, "Errore del server"));
     }
