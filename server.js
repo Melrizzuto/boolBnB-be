@@ -4,7 +4,7 @@ const port = 3000;
 
 import errorsHandler from "./middlewares/errorsHandler.js";
 import notFound from "./middlewares/notFound.js";
-import corsPolicy from './middlewares/corsPolicy.js';
+import corsPolicy from "./middlewares/corsPolicy.js";
 import router from "./routers/properties.js";
 import reviewsRouter from "./routers/reviews.js";
 import likesRouter from "./routers/likes.js"

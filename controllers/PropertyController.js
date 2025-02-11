@@ -1,37 +1,57 @@
 import connection from "../connection.js";
 import nodemailer from "nodemailer"
+import customError from "../classes/customError.js";
 
-export const addProperty = async (req, res) => {
+/**
+ * Aggiunge un nuovo immobile al database.
+ * La richiesta deve contenere i seguenti campi:
+ * - user_id: l'ID dell'utente proprietario
+ * - title: il titolo dell'immobile
+ * - num_rooms: il numero di stanze
+ * - num_beds: il numero di letti
+ * - num_bathrooms: il numero di bagni
+ * - square_meters: la superficie dell'immobile in metri quadrati
+ * - address: l'indirizzo dell'immobile
+ * - image: l'immagine dell'immobile (facoltativa)
+ * - property_type: il tipo di immobile (es. flat, house, etc.)
+ * 
+ * La funzione verifica la validità  dei dati e restituisce un errore 400 se i dati sono invalidi.
+ * Inoltre, verifica che l'utente sia proprietario e restituisce un errore 403 se non lo .
+ * Se l'operazione riesce, restituisce un messaggio di successo con codice di stato 201.
+ * Se si verifica un errore durante l'operazione, restituisce un messaggio di errore con codice di stato 500.
+ */
+export const addProperty = async (req, res, next) => {
     try {
         // Verifica presenza dati
         const { user_id, title, num_rooms, num_beds, num_bathrooms, square_meters, address, image, property_type } = req.body;
+
         if (!user_id || !title || !num_rooms || !num_beds || !num_bathrooms || !square_meters || !address || !property_type) {
-            return res.status(400).json({ message: "Tutti i campi obbligatori sono richiesti" });
+            return next(new customError(400, "Tutti i campi sono obbligatori."));
         }
         // Verifica validità dati:
         if (typeof title !== 'string' || title.trim() === '') {
-            return res.status(400).json({ message: "Il titolo deve essere una stringa non vuota" });
+            return next(new customError(400, "Il titolo deve essere una stringa non vuota"));
         }
 
         if (typeof address !== 'string' || address.trim() === '') {
-            return res.status(400).json({ message: "L'indirizzo deve essere una stringa non vuota" });
+            return next(new customError(400, "L'indirizzo deve essere una stringa non vuota"));
         }
 
         // Verifica che i numeri siano positivi
         if (num_rooms <= 0 || num_beds <= 0 || num_bathrooms <= 0 || square_meters <= 0) {
-            return res.status(400).json({ message: "Numero di stanze, letti, bagni e metri quadrati devono essere valori positivi" });
+            return next(new customError(400, "Numero di stanze, letti, bagni e metri quadrati devono essere valori positivi"));
         }
 
         if (typeof property_type !== 'string' || property_type.trim() === '') {
-            return res.status(400).json({ message: "Il tipo di immobile deve essere una stringa non vuota" });
+            return next(new customError(400, "Il tipo di immobile deve essere una stringa non vuota"));
         }
 
         // Verifica che utente sia proprietario:
-        const userQuery = "SELECT user_type FROM users WHERE id = ?";
+        const userQuery = "SELECT user_type FROM user WHERE id = ?";
         const [userRows] = await connection.execute(userQuery, [user_id]);
         
-        if (userRows.length === 0 || userRows[0].user_type !== 'owner') {
-            return res.status(403).json({ message: "Solo i proprietari possono aggiungere immobili." });
+        if (userRows.length === 0 || userRows[0].user_type !== 'proprietario') {
+            return next(new customError(403, "Solo i proprietari possono aggiungere immobili."));
         }
 
         const query = `
@@ -55,31 +75,27 @@ export const addProperty = async (req, res) => {
     }
     catch (error) {
         console.error("Errore nel controller addProperty:", error);
-        res.status(500).json({ message: "Errore del server" });
+        next(new customError(500, "Errore del server"));
     }
 };
 
-export const searchProperties = async (req, res) => {
+export const searchProperties = async (req, res, next) => {
     try{
         // Estrai i parametri dalla query string
-        const {
-            searchTerm,      
-            minRooms,        
-            minBeds,       
-            propertyType,   
-          } = req.query;
+        const { searchTerm, minRooms, minBeds, propertyType } = req.query;
+
           // Validazione dei parametri
         if (searchTerm && typeof searchTerm !== 'string') {
-            return res.status(400).json({ message: "Il termine di ricerca deve essere una stringa" });
+            return next(new customError(400, "Il termine di ricerca deve essere una stringa"));
         }
           // Impostazioni predefinite per i filtri
           const searchQuery = `%${searchTerm || ''}%`;
-          const minRoomsFilter = minRooms || 0;
-          const minBedsFilter = minBeds || 0;
+          const minRoomsFilter = parseInt(minRooms, 10) || 0;
+          const minBedsFilter = parseInt(minBeds, 10) || 0;
           const propertyTypeFilter = `%${propertyType || ''}%`;
            // Verifica che minRooms e minBeds siano numeri positivi
         if (minRoomsFilter < 0 || minBedsFilter < 0) {
-            return res.status(400).json({ message: "Il numero minimo di stanze e letti deve essere un numero positivo" });
+            return next(new customError(400, "I filtri minRooms e minBeds devono essere numeri positivi"));
         }
           // Query dinamica per la ricerca
           const query = `
@@ -94,7 +110,7 @@ export const searchProperties = async (req, res) => {
             p.image, 
             p.property_type, 
             COUNT(r.id) AS num_reviews, 
-            SUM(r.vote) AS total_votes 
+            SUM(r.rating) AS total_votes 
           FROM 
             properties p
           LEFT JOIN 
@@ -128,7 +144,8 @@ export const searchProperties = async (req, res) => {
     }
 };
 
-export const getProperitesDetails = async (req, res) => {
+
+export const getProperitesDetails = async (req, res, next) => {
     try {
         const {id} = req.params;
         // Query per ottenere i dettagli dell'immobile e le recensioni
@@ -144,21 +161,23 @@ export const getProperitesDetails = async (req, res) => {
             p.image,
             p.property_type,
             COUNT(r.id) AS num_reviews,
-            SUM(r.vote) AS total_votes,
-            GROUP_CONCAT(CONCAT(r.name, ': ', r.text) ORDER BY r.created_at DESC) AS reviews
+            IFNULL(SUM(r.rating), 0) AS total_votes,
+            GROUP_CONCAT(CONCAT(u.name, ': ', r.review_text) ORDER BY r.created_at DESC SEPARATOR ' || ') AS reviews
         FROM 
             properties p
         LEFT JOIN 
             reviews r ON p.id = r.property_id
+        LEFT JOIN 
+            user u ON r.user_id = u.id
         WHERE 
             p.id = ?
         GROUP BY 
             p.id;
         `;
         // Esecuzione query
-        const [rows] = (await connection).execute(query, [id]);
+        const [rows] = await connection.execute(query, [id]);
         if (rows.length === 0) {
-            return res.status(404).json({ message: "Immobile non trovato" });
+            return next(new customError(404, "Immobile non trovato"));
         }
 
         // Restituire i dettagli dell'immobile
@@ -169,11 +188,11 @@ export const getProperitesDetails = async (req, res) => {
     }
     catch (error) {
         console.error("Errore nel recupero dei dettagli dell'immobile:", error);
-        res.status(500).json({ message: "Errore del server" });
+        next(new customError(500, "Errore del server"));
     };
 };
 
-export const contactOwner = async (req, res) => {
+export const contactOwner = async (req, res, next) => {
     try {
       const { propertyId } = req.params;
       const { email, message, ownerEmail } = req.body;
@@ -183,7 +202,7 @@ export const contactOwner = async (req, res) => {
       const [propertyRows] = await connection.execute(propertyQuery, [propertyId]);
   
       if (propertyRows.length === 0) {
-        return res.status(404).json({ message: 'Proprietà non trovata' });
+        return next(new customError(404, 'Proprietà non trovata'));
       }
   
       // Crea un trasportatore per inviare l'email (configurazione di Nodemailer)
@@ -212,6 +231,6 @@ export const contactOwner = async (req, res) => {
       });
     } catch (error) {
       console.error('Errore nell\'invio del messaggio:', error);
-      res.status(500).json({ message: 'Errore del server' });
+      next(new customError(500, 'Errore del server'));
     }
   };
