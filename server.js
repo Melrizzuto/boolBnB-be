@@ -1,13 +1,14 @@
 import express from "express";
-const app = express(); // Creazione istanza dell'app express
-const port = 3000;
-
 import errorsHandler from "./middlewares/errorsHandler.js";
 import notFound from "./middlewares/notFound.js";
 import corsPolicy from "./middlewares/corsPolicy.js";
 import router from "./routers/properties.js";
 import reviewsRouter from "./routers/reviews.js";
 import likesRouter from "./routers/likes.js"
+import usersRouter from "./routers/users.js";
+
+const app = express(); // Creazione istanza dell'app express
+const port = 3000;
 
 // Imposta una cartella statica "public" per servire file statici
 app.use(express.static("public"));
@@ -26,6 +27,9 @@ app.use("/properties/:propertyId/reviews", reviewsRouter);
 
 // Registra il router dei likes
 app.use("/properties/:propertyId/likes", likesRouter);
+
+//Registra il router degli utenti
+app.use("/users", usersRouter);
 
 // Usa il middleware per la gestione degli errori globali
 app.use(errorsHandler);

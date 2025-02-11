@@ -82,7 +82,8 @@ export const searchProperties = async (req, res, next) => {
           // Query dinamica per la ricerca
           const query = `
           SELECT 
-            p.id, 
+            p.id,
+            p.user_id, 
             p.title, 
             p.num_rooms, 
             p.num_beds, 
@@ -204,10 +205,9 @@ export const contactOwner = async (req, res, next) => {
           service: 'gmail',
           auth: {
               user: process.env.EMAIL_USER,
-              pass: process.env.EMAIL_PASS,
+              pass: process.env.EMAIL_PASSWORD,
           },
       });
-
       // Configura l'email
       const mailOptions = {
           from: process.env.EMAIL_USER,
