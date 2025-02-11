@@ -15,9 +15,9 @@ app.use(express.json());
 
 app.use("/properties", router);
 
-app.use(errorsHandler);
-
 app.use(notFound);
+
+app.use(errorsHandler);
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

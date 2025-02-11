@@ -47,10 +47,10 @@ export const addProperty = async (req, res, next) => {
         }
 
         // Verifica che utente sia proprietario:
-        const userQuery = "SELECT user_type FROM users WHERE id = ?";
+        const userQuery = "SELECT user_type FROM user WHERE id = ?";
         const [userRows] = await connection.execute(userQuery, [user_id]);
         
-        if (userRows.length === 0 || userRows[0].user_type !== 'owner') {
+        if (userRows.length === 0 || userRows[0].user_type !== 'proprietario') {
             return next(new customError(403, "Solo i proprietari possono aggiungere immobili."));
         }
 
@@ -110,7 +110,7 @@ export const searchProperties = async (req, res, next) => {
             p.image, 
             p.property_type, 
             COUNT(r.id) AS num_reviews, 
-            SUM(r.vote) AS total_votes 
+            SUM(r.rating) AS total_votes 
           FROM 
             properties p
           LEFT JOIN 
@@ -160,7 +160,7 @@ export const getProperitesDetails = async (req, res, next) => {
             p.image,
             p.property_type,
             COUNT(r.id) AS num_reviews,
-            SUM(r.vote) AS total_votes,
+            SUM(r.rating) AS total_votes,
             GROUP_CONCAT(CONCAT(r.name, ': ', r.text) ORDER BY r.created_at DESC) AS reviews
         FROM 
             properties p
@@ -172,7 +172,7 @@ export const getProperitesDetails = async (req, res, next) => {
             p.id;
         `;
         // Esecuzione query
-        const [rows] = connection.execute(query, [id]);
+        const [rows] = await connection.execute(query, [id]);
         if (rows.length === 0) {
             return next(new customError(404, "Immobile non trovato"));
         }
