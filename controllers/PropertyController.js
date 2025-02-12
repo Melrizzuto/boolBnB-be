@@ -210,41 +210,39 @@ export const getPropertyBySlug = async (req, res, next) => {
 
 
 //FUNZIONANTE!
-export const contactOwner = async (req, res, next) => {
+export const contactOwner = async (req, res) => {
+    const { property_id, sender_email, message_text } = req.body;
+
     try {
-        const { slug } = req.params;
-        const { email, message } = req.body;
-
-        // Verifica che la proprietà esista e ottieni l'email del proprietario in base allo slug
-        const propertyQuery = `
-            SELECT p.id, p.user_email AS ownerEmail 
-            FROM properties p
-            WHERE p.slug = ?`;
-        const [propertyRows] = await connection.execute(propertyQuery, [slug]);
-
-        if (propertyRows.length === 0) {
-            return next(new customError(404, 'Proprietà non trovata'));
-        }
-
-        const ownerEmail = propertyRows[0].ownerEmail;
-
-        // Inserisci il messaggio nel database
-        const insertMessageQuery = `
-            INSERT INTO messages (property_id, sender_email, message_text) 
-            VALUES (?, ?, ?)`;
-        await connection.execute(insertMessageQuery, [propertyRows[0].id, email, message]);
-
-        // Invia l'email al proprietario
-        await sendEmail(
-            ownerEmail,
-            "Nuovo messaggio su BoolBnB",
-            `Hai ricevuto un nuovo messaggio da ${email}:\n\n"${message}"`
+        // 1. Controlla se la proprietà esiste e ottieni l'email del proprietario
+        const [property] = await connection.query(
+            "SELECT user_email FROM properties WHERE id = ?",
+            [property_id]
         );
 
-        res.status(200).json({ message: 'Messaggio inviato con successo' });
+        if (property.length === 0) {
+            return res.status(404).json({ message: "Proprietà non trovata" });
+        }
+
+        const ownerEmail = property[0].user_email;
+
+        // 2. Salva il messaggio nel database
+        await connection.query(
+            "INSERT INTO messages (property_id, sender_email, message_text) VALUES (?, ?, ?)",
+            [property_id, sender_email, message_text]
+        );
+
+        // 3. Invia l'email usando la funzione riutilizzabile
+        await sendEmail(
+            ownerEmail,
+            "Nuovo messaggio per la tua proprietà",
+            `Hai ricevuto un nuovo messaggio da ${sender_email}:\n\n"${message_text}"`
+        );
+
+        res.status(200).json({ message: "Messaggio inviato e salvato con successo!" });
 
     } catch (error) {
-        console.error("Errore nel contattare il proprietario:", error);
-        next(error);
+        console.error(error);
+        res.status(500).json({ message: "Errore nell'invio del messaggio" });
     }
 };

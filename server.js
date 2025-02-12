@@ -21,7 +21,7 @@ app.use(express.json());
 app.use("/properties", router);
 
 // Registra il router delle recensioni
-app.use("/properties/:propertyId/reviews", reviewsRouter);
+app.use("/properties/:slug/reviews", reviewsRouter);
 
 
 // Usa il middleware per la gestione degli errori globali
