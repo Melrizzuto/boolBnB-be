@@ -4,7 +4,6 @@ import notFound from "./middlewares/notFound.js";
 import corsPolicy from "./middlewares/corsPolicy.js";
 import router from "./routers/properties.js";
 import reviewsRouter from "./routers/reviews.js";
-import usersRouter from "./routers/users.js";
 
 const app = express(); // Creazione istanza dell'app express
 const port = 3000;
@@ -24,8 +23,6 @@ app.use("/properties", router);
 // Registra il router delle recensioni
 app.use("/properties/:propertyId/reviews", reviewsRouter);
 
-//Registra il router degli utenti
-app.use("/users", usersRouter);
 
 // Usa il middleware per la gestione degli errori globali
 app.use(errorsHandler);
