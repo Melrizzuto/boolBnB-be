@@ -5,9 +5,9 @@ import customError from "../classes/customError.js";
 export const addProperty = async (req, res, next) => {
     try {
         // Verifica presenza dati
-        const { user_id, title, num_rooms, num_beds, num_bathrooms, square_meters, address, image, property_type } = req.body;
+        const { user_name, user_email, title, num_rooms, num_beds, num_bathrooms, square_meters, address, image, property_type } = req.body;
 
-        if (!user_id || !title || !num_rooms || !num_beds || !num_bathrooms || !square_meters || !address || !property_type) {
+        if (!user_name || !user_email || !title || !num_rooms || !num_beds || !num_bathrooms || !square_meters || !address || !property_type) {
             return next(new customError(400, "Tutti i campi sono obbligatori."));
         }
         // Verifica validità dati:
