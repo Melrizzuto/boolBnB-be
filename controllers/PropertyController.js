@@ -1,7 +1,7 @@
 import connection from "../connection.js";
-import nodemailer from "nodemailer"
 import customError from "../classes/customError.js";
 import { slugify } from "../utils/slugify.js";
+import { sendEmail } from "../utils/emailService.js";
 
 //FUNZIONANTE!
 export const addProperty = async (req, res, next) => {
@@ -209,10 +209,10 @@ export const getPropertyBySlug = async (req, res, next) => {
   };
 
 
-//Funzionante!
-  export const contactOwner = async (req, res, next) => {
+//FUNZIONANTE!
+export const contactOwner = async (req, res, next) => {
     try {
-        const { slug } = req.params; // Prendi lo slug dalla rotta
+        const { slug } = req.params;
         const { email, message } = req.body;
 
         // Verifica che la proprietà esista e ottieni l'email del proprietario in base allo slug
@@ -234,25 +234,12 @@ export const getPropertyBySlug = async (req, res, next) => {
             VALUES (?, ?, ?)`;
         await connection.execute(insertMessageQuery, [propertyRows[0].id, email, message]);
 
-        // Configura il trasportatore per inviare l'email
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASSWORD,
-            },
-        });
-
-        // Configura l'email
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: ownerEmail,
-            subject: 'Nuovo messaggio su BoolBnB',
-            text: `Hai ricevuto un nuovo messaggio da ${email}:\n\n"${message}"`,
-        };
-
-        // Invia l'email
-        await transporter.sendMail(mailOptions);
+        // Invia l'email al proprietario
+        await sendEmail(
+            ownerEmail,
+            "Nuovo messaggio su BoolBnB",
+            `Hai ricevuto un nuovo messaggio da ${email}:\n\n"${message}"`
+        );
 
         res.status(200).json({ message: 'Messaggio inviato con successo' });
 
