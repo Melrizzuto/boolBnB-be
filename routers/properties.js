@@ -4,7 +4,7 @@ const router = Router();
 import {
     addProperty,
     searchProperties,
-    getProperitesDetails,
+    getPropertyBySlug,
     contactOwner
 } from "../controllers/PropertyController.js";
 
@@ -14,13 +14,13 @@ import {
 router.get("/", searchProperties);
 
 // Dettagli proprietà
-router.get("/:id", getProperitesDetails);
+router.get("/:slug", getPropertyBySlug);
 
 // Aggiunta proprietà
 router.post("/", addProperty);
 
 // Contattare il proprietario
-router.post("/:propertyId/contact", contactOwner);
+router.post("/:slug/contact", contactOwner);
 
 // Export router
 export default router;
