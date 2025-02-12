@@ -2,6 +2,7 @@ import connection from "../connection.js";
 import customError from "../classes/customError.js";
 import { slugify } from "../utils/slugify.js";
 import { sendEmail } from "../utils/emailService.js";
+import propertyService from "../utils/propertyService.js";
 
 //FUNZIONANTE!
 export const addProperty = async (req, res, next) => {
@@ -244,5 +245,18 @@ export const contactOwner = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Errore nell'invio del messaggio" });
+    }
+};
+export const likeProperty = async (req, res) => {
+    try {
+        const { slug } = req.params; // Otteniamo lo slug dalla rotta
+        const updatedProperty = await propertyService.incrementLikes(slug); // Passiamo lo slug alla funzione
+        if (!updatedProperty) {
+            return res.status(404).json({ message: "Proprietà non trovata" });
+        }
+        res.json({ message: "Like aggiunto", property: updatedProperty });
+    } catch (error) {
+        console.error("Errore durante l'aggiornamento dei like:", error);
+        res.status(500).json({ message: "Errore del server" });
     }
 };
