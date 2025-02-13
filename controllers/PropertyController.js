@@ -205,41 +205,60 @@ export const getPropertyBySlug = async (req, res, next) => {
 
 //FUNZIONANTE!
 export const contactOwner = async (req, res) => {
-  const { property_id, sender_name, sender_email, message_text } = req.body;
+  const { sender_email, message_text } = req.body;
+  const { slug } = req.params; // ✅ Otteniamo lo slug dalla rotta
 
   try {
-    // 1. Controlla se la proprietà esiste e ottieni l'email del proprietario
+    console.log("📥 Incoming request:", { sender_email, message_text, slug });
+
+    // ✅ 1. Trova il property_id usando lo slug
     const [property] = await connection.query(
-      "SELECT user_email FROM properties WHERE id = ?",
-      [property_id]
+      "SELECT id, user_email FROM properties WHERE slug = ?",
+      [slug]
     );
 
     if (property.length === 0) {
+      console.error("❌ Proprietà non trovata per slug:", slug);
       return res.status(404).json({ message: "Proprietà non trovata" });
     }
 
+    const propertyId = property[0].id;
     const ownerEmail = property[0].user_email;
 
-    // 2. Salva il messaggio nel database
+    console.log("🏠 Property found:", { propertyId, ownerEmail });
+
+    // ✅ 2. Salva il messaggio nel database
     await connection.query(
-      "INSERT INTO messages (property_id,sender_name, sender_email, message_text) VALUES (?, ?, ?, ?)",
-      [property_id, sender_name, sender_email, message_text]
+      "INSERT INTO messages (property_id, sender_email, message_text) VALUES (?, ?, ?)",
+      [propertyId, sender_email, message_text]
     );
 
-    // 3. Invia l'email usando la funzione riutilizzabile
-    await sendEmail(
-      ownerEmail,
-      "Nuovo messaggio per la tua proprietà",
-      `Hai ricevuto un nuovo messaggio da ${sender_name} (${sender_email}):\n\n"${message_text}"`
-    );
+    console.log("📩 Message saved successfully in DB");
 
-    res.status(200).json({ message: "Messaggio inviato e salvato con successo!" });
+    // ✅ 3. Invia email al proprietario (se attivo)
+    if (sendEmail) {
+      await sendEmail(
+        ownerEmail,
+        "Nuovo messaggio per la tua proprietà",
+        `Hai ricevuto un nuovo messaggio da ${sender_email}:\n\n"${message_text}"`
+      );
+      console.log("✅ Email inviata con successo!");
+    }
+
+    res.status(201).json({ message: "Messaggio inviato e salvato con successo!" });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Errore nell'invio del messaggio" });
+    console.error("❌ Errore nell'invio del messaggio:", error);
+    res.status(500).json({ message: "Errore del server", error: error.message });
   }
 };
+
+
+
+
+
+
+
 export const likeProperty = async (req, res) => {
   try {
     const { slug } = req.params; // Otteniamo lo slug dalla rotta
