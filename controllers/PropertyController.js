@@ -214,7 +214,7 @@ export const getPropertyBySlug = async (req, res, next) => {
 
 //FUNZIONANTE!
 export const contactOwner = async (req, res) => {
-  const { property_id, sender_email, message_text } = req.body;
+  const { property_id, sender_name, sender_email, message_text } = req.body;
 
   try {
     // 1. Controlla se la proprietà esiste e ottieni l'email del proprietario
@@ -231,15 +231,15 @@ export const contactOwner = async (req, res) => {
 
     // 2. Salva il messaggio nel database
     await connection.query(
-      "INSERT INTO messages (property_id, sender_email, message_text) VALUES (?, ?, ?)",
-      [property_id, sender_email, message_text]
+      "INSERT INTO messages (property_id,sender_name, sender_email, message_text) VALUES (?, ?, ?, ?)",
+      [property_id, sender_name, sender_email, message_text]
     );
 
     // 3. Invia l'email usando la funzione riutilizzabile
     await sendEmail(
       ownerEmail,
       "Nuovo messaggio per la tua proprietà",
-      `Hai ricevuto un nuovo messaggio da ${sender_email}:\n\n"${message_text}"`
+      `Hai ricevuto un nuovo messaggio da ${sender_name} (${sender_email}):\n\n"${message_text}"`
     );
 
     res.status(200).json({ message: "Messaggio inviato e salvato con successo!" });
