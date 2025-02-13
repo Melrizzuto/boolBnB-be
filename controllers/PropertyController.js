@@ -122,6 +122,7 @@ export const searchProperties = async (req, res, next) => {
           p.square_meters, 
           p.address, 
           p.image, 
+          p.likes,
           pt.type_name AS property_type,  
           COUNT(r.id) AS num_reviews, 
           SUM(r.rating) AS total_votes  
@@ -179,6 +180,7 @@ export const getPropertyBySlug = async (req, res, next) => {
           p.city,
           p.image, 
           p.description,
+          p.likes,
           pt.type_name AS property_type,  
           COUNT(r.id) AS num_reviews, 
           SUM(r.rating) AS total_votes  
