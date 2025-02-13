@@ -262,3 +262,11 @@ export const likeProperty = async (req, res) => {
     res.status(500).json({ message: "Errore del server" });
   }
 };
+export const getPropertyTypes = async (req, res, next) => {
+  try {
+    const [rows] = await connection.execute('SELECT * FROM properties_type');
+    res.status(200).json({ types: rows });
+  } catch (error) {
+    next(new customError(500, "Errore del server"));
+  }
+};
