@@ -1,9 +1,9 @@
 import express from "express";
 import errorsHandler from "./middlewares/errorsHandler.js";
 import notFound from "./middlewares/notFound.js";
-// import corsPolicy from "./middlewares/corsPolicy.js";
 import router from "./routers/properties.js";
 import reviewsRouter from "./routers/reviews.js";
+import property_type_Router from "./routers/property_types.js";
 import cors from "cors";
 
 const app = express(); // Creazione istanza dell'app express
@@ -20,6 +20,8 @@ app.use(cors()); // Se "corsPolicy" è utile, assicurati che sia definito corret
 
 // Imposta il middleware per il parsing del corpo delle richieste in formato JSON
 app.use(express.json());
+
+app.use("/api", property_type_Router);
 
 // Registra il router delle proprietà
 app.use("/properties", router);

@@ -4,8 +4,7 @@ import {
     searchProperties,
     getPropertyBySlug,
     contactOwner,
-    likeProperty,
-    getPropertyTypes
+    likeProperty
 } from "../controllers/PropertyController.js";
 const router = Router();
 // Rotte
@@ -18,9 +17,6 @@ router.get("/:slug", getPropertyBySlug);
 
 // Aggiunta proprietà
 router.post("/", addProperty);
-
-// Tipi di proprietà
-router.get("/types", getPropertyTypes);
 
 // Contattare il proprietario
 router.post("/:slug/contact", contactOwner);

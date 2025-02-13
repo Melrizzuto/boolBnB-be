@@ -92,7 +92,7 @@ export const addProperty = async (req, res, next) => {
 export const searchProperties = async (req, res, next) => {
   try {
     // Estrai i parametri dalla query string
-    const { searchTerm, minRooms, minBeds, propertyType } = req.query;
+    const { searchTerm, minRooms, minBeds, minBathrooms, propertyType } = req.query;
 
     // Validazione dei parametri
     if (searchTerm && typeof searchTerm !== 'string') {
@@ -103,52 +103,41 @@ export const searchProperties = async (req, res, next) => {
     const searchQuery = `%${searchTerm || ''}%`;
     const minRoomsFilter = parseInt(minRooms, 10) || 0;
     const minBedsFilter = parseInt(minBeds, 10) || 0;
-    const propertyTypeFilter = `%${propertyType || ''}%`;
+    const minBathroomsFilter = parseInt(minBathrooms, 10) || 0;
+    const propertyTypeFilter = propertyType || null;
 
     // Verifica che minRooms e minBeds siano numeri positivi
-    if (minRoomsFilter < 0 || minBedsFilter < 0) {
-      return next(new customError(400, "I filtri minRooms e minBeds devono essere numeri positivi"));
+    if (minRoomsFilter < 0 || minBedsFilter < 0 || minBathroomsFilter < 0) {
+      return next(new customError(400, "I filtri minRooms,  minBeds e minBathrooms devono essere numeri positivi"));
     }
 
     // Query dinamica per la ricerca
     const query = `
-        SELECT 
-          p.id,
-          p.slug,  -- includi lo slug nei risultati
-          p.title, 
-          p.num_rooms, 
-          p.num_beds, 
-          p.num_bathrooms, 
-          p.square_meters, 
-          p.address, 
-          p.image, 
-          p.likes,
-          pt.type_name AS property_type,  
-          COUNT(r.id) AS num_reviews, 
-          SUM(r.rating) AS total_votes  
-        FROM 
-          properties p
-        LEFT JOIN 
-          reviews r ON p.id = r.property_id
-        LEFT JOIN 
-          properties_type pt ON p.type_id = pt.id  
-        WHERE 
-          p.address LIKE ? 
+         SELECT 
+          p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
+          p.address, p.city, p.image, p.likes, pt.type_name AS property_type, 
+          COUNT(r.id) AS num_reviews, SUM(r.rating) AS total_votes 
+        FROM properties p
+        LEFT JOIN reviews r ON p.id = r.property_id
+        LEFT JOIN properties_type pt ON p.type_id = pt.id  
+        WHERE (p.address LIKE ? OR p.city LIKE ?) 
           AND p.num_rooms >= ? 
           AND p.num_beds >= ? 
-          AND pt.type_name LIKE ?  
-        GROUP BY 
-          p.id
-        ORDER BY 
-          total_votes DESC;
+          AND p.num_bathrooms >= ? 
+          AND (? IS NULL OR pt.type_name = ?)  
+        GROUP BY p.id
+        ORDER BY total_votes DESC;
       `;
 
     // Esecuzione query
     const [rows] = await connection.execute(query, [
       searchQuery,
+      searchQuery,
       minRoomsFilter,
       minBedsFilter,
+      minBathroomsFilter,
       propertyTypeFilter,
+      propertyTypeFilter
     ]);
 
     // Risultati
@@ -262,13 +251,5 @@ export const likeProperty = async (req, res) => {
   } catch (error) {
     console.error("Errore durante l'aggiornamento dei like:", error);
     res.status(500).json({ message: "Errore del server" });
-  }
-};
-export const getPropertyTypes = async (req, res, next) => {
-  try {
-    const [rows] = await connection.execute('SELECT * FROM properties_type');
-    res.status(200).json({ types: rows });
-  } catch (error) {
-    next(new customError(500, "Errore del server"));
   }
 };
