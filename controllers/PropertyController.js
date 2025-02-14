@@ -212,7 +212,7 @@ export const contactOwner = async (req, res) => {
     console.log("📥 Incoming request:", { sender_email, message_text, slug });
 
     // ✅ 1. Trova il property_id usando lo slug
-    const [property] = await connection.query(
+    const [property] = await connection.execute(
       "SELECT id, user_email FROM properties WHERE slug = ?",
       [slug]
     );
@@ -228,7 +228,7 @@ export const contactOwner = async (req, res) => {
     console.log("🏠 Property found:", { propertyId, ownerEmail });
 
     // ✅ 2. Salva il messaggio nel database
-    await connection.query(
+    await connection.execute(
       "INSERT INTO messages (property_id, sender_email, message_text) VALUES (?, ?, ?)",
       [propertyId, sender_email, message_text]
     );
