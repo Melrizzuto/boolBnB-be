@@ -15,16 +15,18 @@ export const addProperty = async (req, res, next) => {
     }
 
     // Verifica validità dati:
-    if (typeof title !== 'string' || title.trim() === '') {
-      return next(new customError(400, "Il titolo deve essere una stringa non vuota"));
+    if (typeof title !== 'string' || title.trim() === '' || title.length < 3) {
+      return next(new customError(400, "Il titolo deve essere una stringa non vuota e deve avere almeno una lunghezza di 3 caratteri"));
     }
 
-    if (typeof address !== 'string' || address.trim() === '') {
-      return next(new customError(400, "L'indirizzo deve essere una stringa non vuota"));
+
+
+    if (typeof address !== 'string' || address.trim() === '' || address.length < 3) {
+      return next(new customError(400, "L'indirizzo deve essere una stringa non vuota e deve avere almeno una lunghezza di 3 caratteri"));
     }
 
-    if (typeof city !== 'string' || city.trim() === '') {
-      return next(new customError(400, "La città deve essere una stringa non vuota"));
+    if (typeof city !== 'string' || city.trim() === '' || city.length < 2) {
+      return next(new customError(400, "La città deve essere una stringa non vuota e deve avere almeno una lunghezza di 2 caratteri"));
     }
 
     // Verifica che i numeri siano positivi
@@ -252,11 +254,6 @@ export const contactOwner = async (req, res) => {
     res.status(500).json({ message: "Errore del server", error: error.message });
   }
 };
-
-
-
-
-
 
 
 export const likeProperty = async (req, res) => {

@@ -1,3 +1,4 @@
+//converte il titolo inserito in uno slug 
 export const slugify = (text) => {
     return text
         .toString()
