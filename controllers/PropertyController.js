@@ -19,8 +19,6 @@ export const addProperty = async (req, res, next) => {
       return next(new customError(400, "Il titolo deve essere una stringa non vuota e deve avere almeno una lunghezza di 3 caratteri"));
     }
 
-
-
     if (typeof address !== 'string' || address.trim() === '' || address.length < 3) {
       return next(new customError(400, "L'indirizzo deve essere una stringa non vuota e deve avere almeno una lunghezza di 3 caratteri"));
     }

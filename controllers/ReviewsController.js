@@ -1,5 +1,5 @@
 import connection from "../connection.js";
-import customError from "../classes/customError.js";
+import CustomError from "../classes/customError.js";
 
 export const addReview = async (req, res, next) => {
   try {
@@ -7,11 +7,25 @@ export const addReview = async (req, res, next) => {
     const { slug } = req.params;
 
     if (!review_text || !rating || !start_date || !end_date || !user_email || !user_name) {
-      return next(new customError(400, "Tutti i campi sono obbligatori."));
+      return next(new CustomError(400, "Tutti i campi sono obbligatori."));
+    }
+
+    if (review_text.length < 3 || user_name.length < 3) {
+      return next(new CustomError(400, "La lunghezza dev'essere almeno di 3 caratteri"));
     }
 
     if (rating < 1 || rating > 5) {
-      return next(new customError(400, "La valutazione deve essere compresa tra 1 e 5."));
+      return next(new CustomError(400, "La valutazione deve essere compresa tra 1 e 5."));
+    }
+    //controllo data 
+    const now = new Date().toISOString().split("T")[0]; // Data attuale senza ora
+
+    if (start_date > end_date) {
+      return next(new CustomError(400, "La data di inizio non può essere successiva alla data di fine."));
+    }
+
+    if (start_date > now || end_date > now) {
+      return next(new CustomError(400, "Le date non possono essere future."));
     }
 
     // Trova il property_id dallo slug
@@ -19,12 +33,12 @@ export const addReview = async (req, res, next) => {
     const [propertyRows] = await connection.execute(propertyQuery, [slug]);
 
     if (propertyRows.length === 0) {
-      return next(new customError(404, "Proprietà non trovata"));
+      return next(new CustomError(404, "Proprietà non trovata"));
     }
 
     const propertyId = propertyRows[0].id;
 
-    // Inserimento della recensione con user_name e user_email
+    // Inserimento della recensione
     const reviewQuery = `
       INSERT INTO reviews (property_id, user_name, user_email, review_text, rating, start_date, end_date)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -43,9 +57,10 @@ export const addReview = async (req, res, next) => {
     res.status(201).json({ message: "Recensione inviata con successo!" });
   } catch (error) {
     console.error("Errore nell'aggiungere la recensione:", error);
-    next(new customError(500, "Errore del server"));
+    next(new CustomError(500, "Errore del server"));
   }
 };
+
 export const getReviews = async (req, res, next) => {
   try {
     const { slug } = req.params;
@@ -55,7 +70,7 @@ export const getReviews = async (req, res, next) => {
     const [propertyRows] = await connection.execute(propertyQuery, [slug]);
 
     if (propertyRows.length === 0) {
-      return next(new customError(404, "Proprietà non trovata"));
+      return next(new CustomError(404, "Proprietà non trovata"));
     }
 
     const propertyId = propertyRows[0].id;
@@ -72,9 +87,10 @@ export const getReviews = async (req, res, next) => {
     res.status(200).json({ reviews });
   } catch (error) {
     console.error("Errore nel recupero delle recensioni:", error);
-    next(new customError(500, "Errore del server"));
+    next(new CustomError(500, "Errore del server"));
   }
 };
+
 
 
 
