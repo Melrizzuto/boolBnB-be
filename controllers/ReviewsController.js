@@ -77,10 +77,11 @@ export const getReviews = async (req, res, next) => {
 
     // Recupera le recensioni della proprietà
     const query = `
-      SELECT r.review_text, r.rating, r.start_date, r.end_date, r.user_email, r.user_name, r.created_at
-      FROM reviews r 
-      WHERE r.property_id = ?
-    `;
+  SELECT r.review_text, r.rating, r.start_date, r.end_date, r.user_email, r.user_name, r.created_at
+  FROM reviews r 
+  WHERE r.property_id = ?
+  ORDER BY r.created_at DESC
+`;
 
     const [reviews] = await connection.execute(query, [propertyId]);
 
