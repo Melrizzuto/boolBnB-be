@@ -91,63 +91,66 @@ export const addProperty = async (req, res, next) => {
 //FUNZIONANTE!
 export const searchProperties = async (req, res, next) => {
   try {
-    // Estrai i parametri dalla query string
-    const { searchTerm, minRooms, minBeds, minBathrooms, propertyType } = req.query;
+      const { searchTerm, minRooms, minBeds, minBathrooms, propertyType } = req.query;
 
-    // Validazione dei parametri
-    if (searchTerm && typeof searchTerm !== 'string') {
-      return next(new customError(400, "Il termine di ricerca deve essere una stringa"));
-    }
+      let whereClauses = [];
+      let queryParams = [];
 
-    // Impostazioni predefinite per i filtri
-    const searchQuery = `%${searchTerm || ''}%`;
-    const minRoomsFilter = parseInt(minRooms, 10) || 0;
-    const minBedsFilter = parseInt(minBeds, 10) || 0;
-    const minBathroomsFilter = parseInt(minBathrooms, 10) || 0;
-    const propertyTypeFilter = propertyType || null;
+      // Gestione del searchTerm solo se presente
+      if (searchTerm) {
+          const searchQuery = `%${searchTerm}%`;
+          whereClauses.push('(p.address LIKE ? OR p.city LIKE ?)');
+          queryParams.push(searchQuery, searchQuery);
+      }
 
-    // Verifica che minRooms e minBeds siano numeri positivi
-    if (minRoomsFilter < 0 || minBedsFilter < 0 || minBathroomsFilter < 0) {
-      return next(new customError(400, "I filtri minRooms,  minBeds e minBathrooms devono essere numeri positivi"));
-    }
+      // Aggiungi i filtri numerici se presenti
+      if (minRooms) {
+          whereClauses.push('p.num_rooms >= ?');
+          queryParams.push(minRooms);
+      }
 
-    // Query dinamica per la ricerca
-    const query = `
-         SELECT 
+      if (minBeds) {
+          whereClauses.push('p.num_beds >= ?');
+          queryParams.push(minBeds);
+      }
+
+      if (minBathrooms) {
+          whereClauses.push('p.num_bathrooms >= ?');
+          queryParams.push(minBathrooms);
+      }
+
+      // Filtro per tipo di proprietà
+      if (propertyType) {
+          whereClauses.push('pt.type_name = ?');
+          queryParams.push(propertyType);
+      }
+
+      // Costruzione della query finale
+      let query = `
+        SELECT 
           p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
           p.address, p.city, p.image, p.likes, pt.type_name AS property_type, 
           COUNT(r.id) AS num_reviews, SUM(r.rating) AS total_votes 
         FROM properties p
         LEFT JOIN reviews r ON p.id = r.property_id
         LEFT JOIN properties_type pt ON p.type_id = pt.id  
-        WHERE (p.address LIKE ? OR p.city LIKE ?) 
-          AND p.num_rooms >= ? 
-          AND p.num_beds >= ? 
-          AND p.num_bathrooms >= ? 
-          AND (? IS NULL OR pt.type_name = ?)  
-        GROUP BY p.id
-        ORDER BY total_votes DESC;
       `;
 
-    // Esecuzione query
-    const [rows] = await connection.execute(query, [
-      searchQuery,
-      searchQuery,
-      minRoomsFilter,
-      minBedsFilter,
-      minBathroomsFilter,
-      propertyTypeFilter,
-      propertyTypeFilter
-    ]);
+      if (whereClauses.length > 0) {
+          query += ' WHERE ' + whereClauses.join(' AND ');
+      }
 
-    // Risultati
-    res.status(200).json({
-      message: "Ricerca completata con successo",
-      results: rows,
-    });
+      query += ' GROUP BY p.id ORDER BY total_votes DESC;';
+
+      const [rows] = await connection.execute(query, queryParams);
+
+      res.status(200).json({
+          message: "Ricerca completata con successo",
+          results: rows,
+      });
   } catch (error) {
-    console.error("Errore nella ricerca delle proprietà:", error);
-    next(error);
+      console.error("Errore nella ricerca delle proprietà:", error);
+      next(new customError(500, "Errore del server"));
   }
 };
 
