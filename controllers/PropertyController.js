@@ -78,7 +78,11 @@ export const addProperty = async (req, res, next) => {
 
     await connection.execute(query, safeValues);
 
-    res.status(201).json({ message: "Immobile aggiunto con successo!" });
+
+    res.status(201).json({
+      message: "Immobile aggiunto con successo!",
+      slug: slug
+    });
 
   }
   catch (error) {
