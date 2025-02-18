@@ -133,7 +133,7 @@ export const searchProperties = async (req, res, next) => {
     let query = `
         SELECT 
           p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
-          p.address, p.city, p.image, p.likes, pt.type_name AS property_type, 
+          p.address, p.city, p.cover_img, p.likes, pt.type_name AS property_type,
           COUNT(r.id) AS num_reviews, SUM(r.rating) AS total_votes 
         FROM properties p
         LEFT JOIN reviews r ON p.id = r.property_id
