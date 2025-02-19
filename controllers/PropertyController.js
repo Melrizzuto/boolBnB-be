@@ -137,7 +137,7 @@ export const searchProperties = async (req, res, next) => {
           COUNT(r.id) AS num_reviews, SUM(r.rating) AS total_votes 
         FROM properties p
         LEFT JOIN reviews r ON p.id = r.property_id
-        LEFT JOIN properties_type pt ON p.type_id = pt.id  
+        LEFT JOIN properties_type pt ON p.type_id = pt.id 
       `;
 
     if (whereClauses.length > 0) {
@@ -185,7 +185,7 @@ export const getPropertyBySlug = async (req, res, next) => {
         LEFT JOIN 
           reviews r ON p.id = r.property_id
         LEFT JOIN 
-          properties_type pt ON p.type_id = pt.id  
+          properties_type pt ON p.type_id = pt.id 
         WHERE 
           p.slug = ?  -- Cerca per slug invece che per id
         GROUP BY 
