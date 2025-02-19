@@ -8,8 +8,7 @@ import propertyService from "../utils/propertyService.js";
 export const addProperty = async (req, res, next) => {
   try {
     // Verifica presenza dati
-    const { title, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id } = req.body;
-    const images = req.files ? req.files.map(file => "/" + file.filename) : [];
+    const { title, cover_img, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id } = req.body;
 
     if (!user_name || !user_email || !title || !num_rooms || !num_beds || !num_bathrooms || !square_meters || !address || !city) {
       return next(new customError(400, "Tutti i campi sono obbligatori."));
@@ -52,7 +51,7 @@ export const addProperty = async (req, res, next) => {
     const safeValues = [
       slug,
       title,
-      JSON.stringify(images), // Salva l'array di immagini come stringa
+      cover_img || null,
       description || null,
       num_rooms,
       num_beds,
@@ -74,7 +73,7 @@ export const addProperty = async (req, res, next) => {
     }
 
     const query = `
-        INSERT INTO properties (slug, title, image, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id)
+        INSERT INTO properties (slug, title, cover_img, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     await connection.execute(query, safeValues);
@@ -134,7 +133,7 @@ export const searchProperties = async (req, res, next) => {
     let query = `
         SELECT 
           p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
-          p.address, p.city, p.cover_img, p.likes, pt.type_name AS property_type, 
+          p.address, p.city, p.cover_img, p.likes, pt.type_name AS property_type,
           COUNT(r.id) AS num_reviews, SUM(r.rating) AS total_votes 
         FROM properties p
         LEFT JOIN reviews r ON p.id = r.property_id
