@@ -5,6 +5,7 @@ import router from "./routers/properties.js";
 import reviewsRouter from "./routers/reviews.js";
 import property_type_Router from "./routers/property_types.js";
 import cors from "cors";
+import multer from "multer";
 
 const app = express(); // Creazione istanza dell'app express
 const port = 3000;
@@ -20,6 +21,23 @@ app.use(cors()); // Se "corsPolicy" è utile, assicurati che sia definito corret
 
 // Imposta il middleware per il parsing del corpo delle richieste in formato JSON
 app.use(express.json());
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        return cb(null, "./public");
+    },
+    filename: function (req, file, cb) {
+        return cb(null, file.originalname);
+    }
+})
+
+const upload = multer({ storage: storage });
+
+app.post("/upload", upload.single("image"), (req, res) => {
+    console.log(req.body);
+    console.log(req.file);
+    res.status(200).json({ message: "File uploaded successfully", file: req.file });
+})
 
 app.use("/api", property_type_Router);
 

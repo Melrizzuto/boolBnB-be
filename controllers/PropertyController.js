@@ -8,7 +8,8 @@ import propertyService from "../utils/propertyService.js";
 export const addProperty = async (req, res, next) => {
   try {
     // Verifica presenza dati
-    const { title, image, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id } = req.body;
+    const { title, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id } = req.body;
+    const images = req.files ? req.files.map(file => "/" + file.filename) : [];
 
     if (!user_name || !user_email || !title || !num_rooms || !num_beds || !num_bathrooms || !square_meters || !address || !city) {
       return next(new customError(400, "Tutti i campi sono obbligatori."));
@@ -51,7 +52,7 @@ export const addProperty = async (req, res, next) => {
     const safeValues = [
       slug,
       title,
-      image || null,
+      JSON.stringify(images), // Salva l'array di immagini come stringa
       description || null,
       num_rooms,
       num_beds,
@@ -95,66 +96,66 @@ export const addProperty = async (req, res, next) => {
 //FUNZIONANTE!
 export const searchProperties = async (req, res, next) => {
   try {
-      const { searchTerm, minRooms, minBeds, minBathrooms, propertyType } = req.query;
+    const { searchTerm, minRooms, minBeds, minBathrooms, propertyType } = req.query;
 
-      let whereClauses = [];
-      let queryParams = [];
+    let whereClauses = [];
+    let queryParams = [];
 
-      // Gestione del searchTerm solo se presente
-      if (searchTerm) {
-          const searchQuery = `%${searchTerm}%`;
-          whereClauses.push('(p.address LIKE ? OR p.city LIKE ?)');
-          queryParams.push(searchQuery, searchQuery);
-      }
+    // Gestione del searchTerm solo se presente
+    if (searchTerm) {
+      const searchQuery = `%${searchTerm}%`;
+      whereClauses.push('(p.address LIKE ? OR p.city LIKE ?)');
+      queryParams.push(searchQuery, searchQuery);
+    }
 
-      // Aggiungi i filtri numerici se presenti
-      if (minRooms) {
-          whereClauses.push('p.num_rooms >= ?');
-          queryParams.push(minRooms);
-      }
+    // Aggiungi i filtri numerici se presenti
+    if (minRooms) {
+      whereClauses.push('p.num_rooms >= ?');
+      queryParams.push(minRooms);
+    }
 
-      if (minBeds) {
-          whereClauses.push('p.num_beds >= ?');
-          queryParams.push(minBeds);
-      }
+    if (minBeds) {
+      whereClauses.push('p.num_beds >= ?');
+      queryParams.push(minBeds);
+    }
 
-      if (minBathrooms) {
-          whereClauses.push('p.num_bathrooms >= ?');
-          queryParams.push(minBathrooms);
-      }
+    if (minBathrooms) {
+      whereClauses.push('p.num_bathrooms >= ?');
+      queryParams.push(minBathrooms);
+    }
 
-      // Filtro per tipo di proprietà
-      if (propertyType) {
-          whereClauses.push('pt.type_name = ?');
-          queryParams.push(propertyType);
-      }
+    // Filtro per tipo di proprietà
+    if (propertyType) {
+      whereClauses.push('pt.type_name = ?');
+      queryParams.push(propertyType);
+    }
 
-      // Costruzione della query finale
-      let query = `
+    // Costruzione della query finale
+    let query = `
         SELECT 
           p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
-          p.address, p.city, p.image, p.likes, pt.type_name AS property_type, 
+          p.address, p.city, p.cover_img, p.likes, pt.type_name AS property_type, 
           COUNT(r.id) AS num_reviews, SUM(r.rating) AS total_votes 
         FROM properties p
         LEFT JOIN reviews r ON p.id = r.property_id
-        LEFT JOIN properties_type pt ON p.type_id = pt.id  
+        LEFT JOIN properties_type pt ON p.type_id = pt.id 
       `;
 
-      if (whereClauses.length > 0) {
-          query += ' WHERE ' + whereClauses.join(' AND ');
-      }
+    if (whereClauses.length > 0) {
+      query += ' WHERE ' + whereClauses.join(' AND ');
+    }
 
-      query += ' GROUP BY p.id ORDER BY total_votes DESC;';
+    query += ' GROUP BY p.id ORDER BY total_votes DESC;';
 
-      const [rows] = await connection.execute(query, queryParams);
+    const [rows] = await connection.execute(query, queryParams);
 
-      res.status(200).json({
-          message: "Ricerca completata con successo",
-          results: rows,
-      });
+    res.status(200).json({
+      message: "Ricerca completata con successo",
+      results: rows,
+    });
   } catch (error) {
-      console.error("Errore nella ricerca delle proprietà:", error);
-      next(new customError(500, "Errore del server"));
+    console.error("Errore nella ricerca delle proprietà:", error);
+    next(new customError(500, "Errore del server"));
   }
 };
 
@@ -174,7 +175,7 @@ export const getPropertyBySlug = async (req, res, next) => {
           p.square_meters, 
           p.address,
           p.city,
-          p.image, 
+          p.cover_img,
           p.description,
           p.likes,
           pt.type_name AS property_type,  
@@ -185,7 +186,7 @@ export const getPropertyBySlug = async (req, res, next) => {
         LEFT JOIN 
           reviews r ON p.id = r.property_id
         LEFT JOIN 
-          properties_type pt ON p.type_id = pt.id  
+          properties_type pt ON p.type_id = pt.id 
         WHERE 
           p.slug = ?  -- Cerca per slug invece che per id
         GROUP BY 

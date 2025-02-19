@@ -6,6 +6,7 @@ import {
     contactOwner,
     likeProperty
 } from "../controllers/PropertyController.js";
+import { searchSecondaryImageBySlug } from "../controllers/PropertyImagesController.js";
 const router = Router();
 // Rotte
 
@@ -17,6 +18,9 @@ router.get("/:slug", getPropertyBySlug);
 
 // Aggiunta proprietà
 router.post("/", addProperty);
+
+// Dettagli immagini secondarie
+router.get("/:slug/images", searchSecondaryImageBySlug);
 
 // Contattare il proprietario
 router.post("/:slug/contact", contactOwner);
