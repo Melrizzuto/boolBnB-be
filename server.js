@@ -6,6 +6,7 @@ import reviewsRouter from "./routers/reviews.js";
 import property_type_Router from "./routers/property_types.js";
 import cors from "cors";
 import multer from "multer";
+import path from "path";
 
 const app = express(); // Creazione istanza dell'app express
 const port = 3000;
@@ -14,10 +15,7 @@ const port = 3000;
 app.use(cors());
 
 // Imposta una cartella statica "public" per servire file statici
-app.use(express.static("public"));
-
-// Usa il middleware per la gestione delle politiche CORS (se necessario)
-app.use(cors()); // Se "corsPolicy" è utile, assicurati che sia definito correttamente
+app.use("/public", express.static(path.join(process.cwd(), "public")));
 
 // Imposta il middleware per il parsing del corpo delle richieste in formato JSON
 app.use(express.json());

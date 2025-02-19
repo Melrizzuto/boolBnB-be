@@ -24,4 +24,10 @@ const fileFilter = (req, file, cb) => {
 };
 
 // Middleware multer
-export const upload = multer({ storage: storage, fileFilter: fileFilter });
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 }, // Limite di 5MB per immagine
+  }).array("images", 4); // Accetta fino a 4 immagini
+  
+  export default upload;
