@@ -20,23 +20,6 @@ app.use("/public", express.static(path.join(process.cwd(), "public")));
 // Imposta il middleware per il parsing del corpo delle richieste in formato JSON
 app.use(express.json());
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        return cb(null, "./public");
-    },
-    filename: function (req, file, cb) {
-        return cb(null, file.originalname);
-    }
-})
-
-const upload = multer({ storage: storage });
-
-app.post("/upload", upload.single("image"), (req, res) => {
-    console.log(req.body);
-    console.log(req.file);
-    res.status(200).json({ message: "File uploaded successfully", file: req.file });
-})
-
 app.use("/api", property_type_Router);
 
 // Registra il router delle proprietà
