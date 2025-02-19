@@ -95,7 +95,7 @@ export const addProperty = async (req, res, next) => {
 //FUNZIONANTE!
 export const searchProperties = async (req, res, next) => {
   try {
-    const { searchTerm, minRooms, minBeds, minBathrooms, propertyType, page = 1, limit = 4 } = req.query;
+    const { searchTerm, minRooms, minBeds, minBathrooms, propertyType, page = 1, limit = 3 } = req.query;
 
     let whereClauses = [];
     let queryParams = [];
