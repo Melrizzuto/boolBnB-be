@@ -95,7 +95,7 @@ export const addProperty = async (req, res, next) => {
 //FUNZIONANTE!
 export const searchProperties = async (req, res, next) => {
   try {
-    const { searchTerm, minRooms, minBeds, minBathrooms, propertyType } = req.query;
+    const { searchTerm, minRooms, minBeds, minBathrooms, propertyType, page = 1, limit = 4 } = req.query;
 
     let whereClauses = [];
     let queryParams = [];
@@ -129,7 +129,24 @@ export const searchProperties = async (req, res, next) => {
       queryParams.push(propertyType);
     }
 
-    // Costruzione della query finale
+    // Costruzione della clausola WHERE
+    let whereClause = whereClauses.length > 0 ? ' WHERE ' + whereClauses.join(' AND ') : '';
+
+    // Query per il conteggio totale delle proprietà (senza paginazione)
+    const countQuery = `
+      SELECT COUNT(DISTINCT p.id) AS total
+      FROM properties p
+      LEFT JOIN properties_type pt ON p.type_id = pt.id
+      LEFT JOIN reviews r ON p.id = r.property_id
+      ${whereClause}
+    `;
+
+    const [[{ total }]] = await connection.execute(countQuery, queryParams);
+
+    // Paginazione
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Query per ottenere le proprietà con i filtri e paginazione
     let query = `
         SELECT 
           p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
@@ -138,19 +155,23 @@ export const searchProperties = async (req, res, next) => {
         FROM properties p
         LEFT JOIN reviews r ON p.id = r.property_id
         LEFT JOIN properties_type pt ON p.type_id = pt.id 
-      `;
-
-    if (whereClauses.length > 0) {
-      query += ' WHERE ' + whereClauses.join(' AND ');
-    }
-
-    query += ' GROUP BY p.id ORDER BY total_votes DESC;';
+        ${whereClause}
+        GROUP BY p.id
+        ORDER BY total_votes DESC
+        LIMIT ${parseInt(limit)} OFFSET ${offset}
+    `;
 
     const [rows] = await connection.execute(query, queryParams);
 
     res.status(200).json({
       message: "Ricerca completata con successo",
       results: rows,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalResults: total,
+        limit: parseInt(limit)
+      }
     });
   } catch (error) {
     console.error("Errore nella ricerca delle proprietà:", error);
