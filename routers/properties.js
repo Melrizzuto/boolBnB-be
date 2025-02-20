@@ -7,6 +7,8 @@ import {
     likeProperty
 } from "../controllers/PropertyController.js";
 import { searchSecondaryImageBySlug, addSecondaryImages } from "../controllers/PropertyImagesController.js";
+import upload from "../utils/imageUpload.js";
+
 const router = Router();
 // Rotte
 
@@ -17,13 +19,13 @@ router.get("/", searchProperties);
 router.get("/:slug", getPropertyBySlug);
 
 // Aggiunta proprietà
-router.post("/", addProperty);
+router.post("/", upload, addProperty);
 
 // Dettagli immagini secondarie
 router.get("/:slug/images", searchSecondaryImageBySlug);
 
 //Agiiunta immagini secondarie
-router.post("/:slug/images", addSecondaryImages);
+router.post("/:slug/images", upload, addSecondaryImages);
 
 // Contattare il proprietario
 router.post("/:slug/contact", contactOwner);

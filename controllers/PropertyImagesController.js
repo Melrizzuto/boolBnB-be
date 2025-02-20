@@ -29,36 +29,32 @@ export const searchSecondaryImageBySlug = async (req, res, next) => {
 
 export const addSecondaryImages = async (req, res, next) => {
     upload(req, res, async (err) => {
-        if(err) return next(new CustomError(400, "Accesso negato"));
-        const {slug} = req.params;
+        if (err) return next(new CustomError(400, "Accesso negato"));
+        const { slug } = req.params;
 
-        try{
+        try {
             const queryProperty = `SELECT id FROM properties WHERE slug = ?`;
             const [property] = await connection.query(queryProperty, [slug]);
             console.log("Property result:", property);
 
-            if (property.lenght === 0)  return next(CustomError(404, "Proprietà non trovata"));
+            if (property.length === 0) return next(CustomError(404, "Proprietà non trovata"));
 
             const propertyId = property[0].id;
 
             //Controllo immagini in upload
-            if(!req.files || req.files.length === 0) return next(new CustomError(400, "Nessuna immagine caricata"));
+            if (!req.files || req.files.length === 0) return next(new CustomError(400, "Nessuna immagine caricata"));
 
-            const imageUrls = req.files.map((file) => `/${file.filename}`);
+            const imageUrls = req.files.images ? req.files.images.map((file) => `/${file.filename}`) : [];
             const values = imageUrls.map((url) => [propertyId, url]);
 
             const queryAddImages = `INSERT INTO property_images (property_id, img_name) VALUES ?`;
             await connection.query(queryAddImages, [values]);
 
-            res.status(201).json({message: "Immagini aggiunte con successo", images: imageUrls});
+            res.status(201).json({ message: "Immagini aggiunte con successo", images: imageUrls });
         }
-        catch(error){
+        catch (error) {
             console.error("Errore nell'aggiunta delle immagini secondarie:", error);
             next(new CustomError(500, "Errore del server"));
         }
     });
-
-
-
-
 };

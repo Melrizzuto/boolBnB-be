@@ -3,92 +3,100 @@ import customError from "../classes/customError.js";
 import { slugify } from "../utils/slugify.js";
 import { sendEmail } from "../utils/emailService.js";
 import propertyService from "../utils/propertyService.js";
+import upload from "../utils/imageUpload.js";
 
 //FUNZIONANTE!
 export const addProperty = async (req, res, next) => {
-  try {
-    // Verifica presenza dati
-    const { title, cover_img, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id } = req.body;
+  upload(req, res, async (err) => {
+    if (err) return next(new customError(400, "Errore nel caricamento dell'immagine"));
+    try {
+      // Verifica presenza dati
+      const { title, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id } = req.body;
 
-    if (!user_name || !user_email || !title || !num_rooms || !num_beds || !num_bathrooms || !square_meters || !address || !city) {
-      return next(new customError(400, "Tutti i campi sono obbligatori."));
-    }
-
-    // Verifica validità dati:
-    if (typeof title !== 'string' || title.trim() === '' || title.length < 3) {
-      return next(new customError(400, "Il titolo deve essere una stringa non vuota e deve avere almeno una lunghezza di 3 caratteri"));
-    }
-
-    if (typeof address !== 'string' || address.trim() === '' || address.length < 3) {
-      return next(new customError(400, "L'indirizzo deve essere una stringa non vuota e deve avere almeno una lunghezza di 3 caratteri"));
-    }
-
-    if (typeof city !== 'string' || city.trim() === '' || city.length < 2) {
-      return next(new customError(400, "La città deve essere una stringa non vuota e deve avere almeno una lunghezza di 2 caratteri"));
-    }
-
-    // Verifica che i numeri siano positivi
-    if (num_rooms <= 0 || num_beds <= 0 || num_bathrooms <= 0 || square_meters <= 0) {
-      return next(new customError(400, "Numero di stanze, letti, bagni e metri quadrati devono essere valori positivi"));
-    }
-    const [validType] = await connection.execute('SELECT id FROM properties_type WHERE id = ?', [type_id]);
-
-    if (validType.length === 0) {
-      return next(new customError(400, "Tipo di proprietà non valido."));
-    }
-
-    const slug = slugify(title);
-
-    // Verifica se type_id esiste nella tabella properties_type, se non è null
-    if (type_id) {
-      const [rows] = await connection.execute('SELECT 1 FROM properties_type WHERE id = ?', [type_id]);
-      if (rows.length === 0) {
-        return next(new customError(400, "Il tipo di proprietà non esiste."));
+      if (!user_name || !user_email || !title || !num_rooms || !num_beds || !num_bathrooms || !square_meters || !address || !city) {
+        return next(new customError(400, "Tutti i campi sono obbligatori."));
       }
-    }
 
-    // Impostazione dei valori
-    const safeValues = [
-      slug,
-      title,
-      cover_img || null,
-      description || null,
-      num_rooms,
-      num_beds,
-      num_bathrooms,
-      square_meters,
-      address,
-      city,
-      user_name,
-      user_email,
-      likes || 0,
-      type_id || null
-    ];
-
-    // Controllo se c'è undefined nei parametri
-    for (const value of safeValues) {
-      if (value === undefined) {
-        return next(new customError(400, "Alcuni dati sono mancanti."));
+      // Verifica validità dati:
+      if (typeof title !== 'string' || title.trim() === '' || title.length < 3) {
+        return next(new customError(400, "Il titolo deve essere una stringa non vuota e deve avere almeno una lunghezza di 3 caratteri"));
       }
-    }
 
-    const query = `
+      if (typeof address !== 'string' || address.trim() === '' || address.length < 3) {
+        return next(new customError(400, "L'indirizzo deve essere una stringa non vuota e deve avere almeno una lunghezza di 3 caratteri"));
+      }
+
+      if (typeof city !== 'string' || city.trim() === '' || city.length < 2) {
+        return next(new customError(400, "La città deve essere una stringa non vuota e deve avere almeno una lunghezza di 2 caratteri"));
+      }
+
+      // Verifica che i numeri siano positivi
+      if (num_rooms <= 0 || num_beds <= 0 || num_bathrooms <= 0 || square_meters <= 0) {
+        return next(new customError(400, "Numero di stanze, letti, bagni e metri quadrati devono essere valori positivi"));
+      }
+      const [validType] = await connection.execute('SELECT id FROM properties_type WHERE id = ?', [type_id]);
+
+      if (validType.length === 0) {
+        return next(new customError(400, "Tipo di proprietà non valido."));
+      }
+
+      const slug = slugify(title);
+      let coverImageUrl = null;
+      if (req.files && req.files.cover_img) {
+        coverImageUrl = `/${req.files.cover_img[0].filename}`; // Salva solo il percorso del file
+      }
+
+      // Verifica se type_id esiste nella tabella properties_type, se non è null
+      if (type_id) {
+        const [rows] = await connection.execute('SELECT 1 FROM properties_type WHERE id = ?', [type_id]);
+        if (rows.length === 0) {
+          return next(new customError(400, "Il tipo di proprietà non esiste."));
+        }
+      }
+
+      // Impostazione dei valori
+      const safeValues = [
+        slug,
+        title,
+        coverImageUrl || null,
+        description || null,
+        num_rooms,
+        num_beds,
+        num_bathrooms,
+        square_meters,
+        address,
+        city,
+        user_name,
+        user_email,
+        likes || 0,
+        type_id || null
+      ];
+
+      // Controllo se c'è undefined nei parametri
+      for (const value of safeValues) {
+        if (value === undefined) {
+          return next(new customError(400, "Alcuni dati sono mancanti."));
+        }
+      }
+
+      const query = `
         INSERT INTO properties (slug, title, cover_img, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    await connection.execute(query, safeValues);
+      await connection.execute(query, safeValues);
 
 
-    res.status(201).json({
-      message: "Immobile aggiunto con successo!",
-      slug: slug
-    });
+      res.status(201).json({
+        message: "Immobile aggiunto con successo!",
+        slug: slug
+      });
 
-  }
-  catch (error) {
-    console.error("Errore nel controller addProperty:", error);
-    next(new customError(500, "Errore del server"));
-  }
+    }
+    catch (error) {
+      console.error("Errore nel controller addProperty:", error);
+      next(new customError(500, "Errore del server"));
+    }
+  });
 };
 
 
