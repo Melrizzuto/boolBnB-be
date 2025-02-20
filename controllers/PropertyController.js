@@ -11,7 +11,26 @@ export const addProperty = async (req, res, next) => {
     if (err) return next(new customError(400, "Errore nel caricamento dell'immagine"));
     try {
       // Verifica presenza dati
-      const { title, description, num_rooms, num_beds, num_bathrooms, square_meters, address, city, user_name, user_email, likes, type_id } = req.body;
+      const { title, description, address, city, user_name, user_email, type_id } = req.body;
+      const num_rooms = parseInt(req.body.num_rooms, 10);
+      const num_beds = parseInt(req.body.num_beds, 10);
+      const num_bathrooms = parseInt(req.body.num_bathrooms, 10);
+      const square_meters = parseFloat(req.body.square_meters);
+      const likes = parseInt(req.body.likes || 0, 10);
+
+      // Verifica validità dei numeri
+      if (isNaN(num_rooms) || num_rooms <= 0) {
+        return next(new customError(400, "Numero di stanze non valido"));
+      }
+      if (isNaN(num_beds) || num_beds <= 0) {
+        return next(new customError(400, "Numero di letti non valido"));
+      }
+      if (isNaN(num_bathrooms) || num_bathrooms <= 0) {
+        return next(new customError(400, "Numero di bagni non valido"));
+      }
+      if (isNaN(square_meters) || square_meters <= 0) {
+        return next(new customError(400, "Metri quadrati non validi"));
+      }
 
       if (!user_name || !user_email || !title || !num_rooms || !num_beds || !num_bathrooms || !square_meters || !address || !city) {
         return next(new customError(400, "Tutti i campi sono obbligatori."));
@@ -60,7 +79,7 @@ export const addProperty = async (req, res, next) => {
         title,
         coverImageUrl || null,
         description || null,
-        num_rooms,
+        num_rooms,  // Ora è un numero
         num_beds,
         num_bathrooms,
         square_meters,
@@ -68,7 +87,7 @@ export const addProperty = async (req, res, next) => {
         city,
         user_name,
         user_email,
-        likes || 0,
+        likes,
         type_id || null
       ];
 
@@ -303,3 +322,4 @@ export const likeProperty = async (req, res) => {
     res.status(500).json({ message: "Errore del server" });
   }
 };
+

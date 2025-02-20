@@ -35,16 +35,17 @@ export const addSecondaryImages = async (req, res, next) => {
         try {
             const queryProperty = `SELECT id FROM properties WHERE slug = ?`;
             const [property] = await connection.query(queryProperty, [slug]);
-            console.log("Property result:", property);
 
             if (property.length === 0) return next(CustomError(404, "Proprietà non trovata"));
 
             const propertyId = property[0].id;
 
             //Controllo immagini in upload
-            if (!req.files || req.files.length === 0) return next(new CustomError(400, "Nessuna immagine caricata"));
+            if (!req.files?.images || req.files.images.length === 0) {
+                return next(new CustomError(400, "Nessuna immagine caricata"));
+            }
 
-            const imageUrls = req.files.images ? req.files.images.map((file) => `/${file.filename}`) : [];
+            const imageUrls = req.files.images.map((file) => `/${file.filename}`);
             const values = imageUrls.map((url) => [propertyId, url]);
 
             const queryAddImages = `INSERT INTO property_images (property_id, img_name) VALUES ?`;

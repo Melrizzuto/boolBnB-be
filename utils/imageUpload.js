@@ -1,19 +1,10 @@
 import multer from 'multer';
 import path from 'path';
-//import fs from "fs";
-
-/*const uploadDir = path.join("img");
-
-// Crea la cartella se non esiste
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}*/
-
 
 // Configurazione dello storage per multer
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, './'); // Cartella dove salvare le immagini
+        cb(null, 'public'); // Cartella dove salvare le immagini
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -24,7 +15,7 @@ const storage = multer.diskStorage({
 
 // Filtro per consentire solo file immagine
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const allowedTypes = ['image/jpeg', 'image/png'];
     if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
@@ -43,3 +34,5 @@ const upload = multer({
 ]);
 
 export default upload;
+
+
