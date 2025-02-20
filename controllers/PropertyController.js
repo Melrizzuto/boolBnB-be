@@ -157,7 +157,7 @@ export const searchProperties = async (req, res, next) => {
         LEFT JOIN properties_type pt ON p.type_id = pt.id 
         ${whereClause}
         GROUP BY p.id
-        ORDER BY total_votes DESC
+        ORDER BY p.likes DESC
         LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
 
