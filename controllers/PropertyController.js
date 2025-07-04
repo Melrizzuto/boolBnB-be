@@ -168,7 +168,9 @@ export const searchProperties = async (req, res, next) => {
       ${whereClause}
     `;
 
-    const [[{ total }]] = await connection.execute(countQuery, queryParams);
+    const [countRows] = await connection.execute(countQuery, queryParams);
+    const total = countRows[0]?.total || 0;
+
 
     // Paginazione
     const offset = (parseInt(page) - 1) * parseInt(limit);
