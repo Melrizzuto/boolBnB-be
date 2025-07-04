@@ -123,11 +123,10 @@ export const addProperty = async (req, res, next) => {
 export const searchProperties = async (req, res, next) => {
   try {
     const { searchTerm, minRooms, minBeds, minBathrooms, propertyType, page = 1, limit = 4 } = req.query;
-
-    const whereClauses = [];
-    const queryParams = [];
-
     // Filtro ricerca per città o indirizzo
+    let whereClauses = [];
+    let queryParams = [];
+
     if (searchTerm) {
       const searchQuery = `%${searchTerm}%`;
       whereClauses.push('(p.address LIKE ? OR p.city LIKE ?)');
@@ -155,7 +154,6 @@ export const searchProperties = async (req, res, next) => {
     }
 
     const whereClause = whereClauses.length > 0 ? ' WHERE ' + whereClauses.join(' AND ') : '';
-
     // Conteggio totale per la paginazione
     const countQuery = `
       SELECT COUNT(DISTINCT p.id) AS total
@@ -165,13 +163,17 @@ export const searchProperties = async (req, res, next) => {
       ${whereClause}
     `;
 
-    const [countResult] = await connection.execute(countQuery, queryParams);
-    const total = Array.isArray(countResult) && countResult.length > 0 ? countResult[0].total || 0 : 0;
+    console.log("📝 Count Query:", countQuery);
+    console.log("📦 Query Params:", queryParams);
 
-    const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const [countRows = []] = await connection.execute(countQuery, queryParams);
+    console.log("🔢 Count Rows:", countRows);
 
-    // Query dati con paginazione
-    const dataQuery = `
+    const total = countRows[0]?.total || 0;
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const query = `
       SELECT 
         p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
         p.address, p.city, p.cover_img, p.likes, pt.type_name AS property_type,
@@ -185,19 +187,25 @@ export const searchProperties = async (req, res, next) => {
       LIMIT ? OFFSET ?
     `;
 
-    const finalParams = [...queryParams, parseInt(limit, 10), offset];
-    const [rowsResult] = await connection.execute(dataQuery, finalParams);
+    const finalParams = [...queryParams, parseInt(limit), offset];
+    console.log("📝 Main Query:", query);
+    console.log("📦 Final Params:", finalParams);
 
-    const results = Array.isArray(rowsResult) ? rowsResult : [];
+    const [rows = []] = await connection.execute(query, finalParams);
+
+    if (!Array.isArray(rows)) {
+      console.error("❌ rows non è un array:", rows);
+      return next(new customError(500, "Errore del server"));
+    }
 
     res.status(200).json({
       message: "Ricerca completata con successo",
-      results,
+      results: rows,
       pagination: {
-        currentPage: parseInt(page, 10),
-        totalPages: Math.ceil(total / parseInt(limit, 10)),
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
         totalResults: total,
-        limit: parseInt(limit, 10)
+        limit: parseInt(limit)
       }
     });
 
@@ -206,6 +214,7 @@ export const searchProperties = async (req, res, next) => {
     next(new customError(500, "Errore del server"));
   }
 };
+
 
 //FUNZIONANTE!
 export const getPropertyBySlug = async (req, res, next) => {
