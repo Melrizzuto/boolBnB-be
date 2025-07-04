@@ -119,11 +119,10 @@ export const addProperty = async (req, res, next) => {
 };
 
 
-//FUNZIONANTE!
 export const searchProperties = async (req, res, next) => {
   try {
     const { searchTerm, minRooms, minBeds, minBathrooms, propertyType, page = 1, limit = 4 } = req.query;
-    // Filtro ricerca per città o indirizzo
+
     let whereClauses = [];
     let queryParams = [];
 
@@ -154,7 +153,8 @@ export const searchProperties = async (req, res, next) => {
     }
 
     const whereClause = whereClauses.length > 0 ? ' WHERE ' + whereClauses.join(' AND ') : '';
-    // Conteggio totale per la paginazione
+
+    // 1️⃣ Conteggio totale
     const countQuery = `
       SELECT COUNT(DISTINCT p.id) AS total
       FROM properties p
@@ -166,13 +166,15 @@ export const searchProperties = async (req, res, next) => {
     console.log("📝 Count Query:", countQuery);
     console.log("📦 Query Params:", queryParams);
 
-    const [countRows = []] = await connection.execute(countQuery, queryParams);
-    console.log("🔢 Count Rows:", countRows);
-
+    const [countRows] = await connection.execute(countQuery, queryParams);
     const total = countRows[0]?.total || 0;
 
+    console.log("🔢 Count Rows:", countRows);
+
+    // 2️⃣ Calcolo Offset
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
+    // 3️⃣ Query principale
     const query = `
       SELECT 
         p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
@@ -188,10 +190,11 @@ export const searchProperties = async (req, res, next) => {
     `;
 
     const finalParams = [...queryParams, parseInt(limit), offset];
+
     console.log("📝 Main Query:", query);
     console.log("📦 Final Params:", finalParams);
 
-    const [rows = []] = await connection.execute(query, finalParams);
+    const [rows] = await connection.execute(query, finalParams);
 
     if (!Array.isArray(rows)) {
       console.error("❌ rows non è un array:", rows);
