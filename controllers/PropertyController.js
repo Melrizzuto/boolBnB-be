@@ -124,17 +124,16 @@ export const searchProperties = async (req, res, next) => {
   try {
     const { searchTerm, minRooms, minBeds, minBathrooms, propertyType, page = 1, limit = 4 } = req.query;
 
-    let whereClauses = [];
-    let queryParams = [];
+    const whereClauses = [];
+    const queryParams = [];
 
-    // Gestione del searchTerm solo se presente
+    // Filtro ricerca per città o indirizzo
     if (searchTerm) {
       const searchQuery = `%${searchTerm}%`;
       whereClauses.push('(p.address LIKE ? OR p.city LIKE ?)');
       queryParams.push(searchQuery, searchQuery);
     }
 
-    // Aggiungi i filtri numerici se presenti
     if (minRooms) {
       whereClauses.push('p.num_rooms >= ?');
       queryParams.push(minRooms);
@@ -150,16 +149,14 @@ export const searchProperties = async (req, res, next) => {
       queryParams.push(minBathrooms);
     }
 
-    // Filtro per tipo di proprietà
     if (propertyType) {
       whereClauses.push('pt.type_name = ?');
       queryParams.push(propertyType);
     }
 
-    // Costruzione della clausola WHERE
-    let whereClause = whereClauses.length > 0 ? ' WHERE ' + whereClauses.join(' AND ') : '';
+    const whereClause = whereClauses.length > 0 ? ' WHERE ' + whereClauses.join(' AND ') : '';
 
-    // Query per il conteggio totale delle proprietà (senza paginazione)
+    // Conteggio totale per la paginazione
     const countQuery = `
       SELECT COUNT(DISTINCT p.id) AS total
       FROM properties p
@@ -168,42 +165,44 @@ export const searchProperties = async (req, res, next) => {
       ${whereClause}
     `;
 
-    const [countRows] = await connection.execute(countQuery, queryParams);
-    const total = countRows[0]?.total || 0;
+    const [countResult] = await connection.execute(countQuery, queryParams);
+    const total = Array.isArray(countResult) && countResult.length > 0 ? countResult[0].total || 0 : 0;
 
+    const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
 
-    // Paginazione
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-
-    // Query per ottenere le proprietà con i filtri e paginazione
-    let query = `
-        SELECT 
-          p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
-          p.address, p.city, p.cover_img, p.likes, pt.type_name AS property_type,
-          COUNT(r.id) AS num_reviews, SUM(r.rating) AS total_votes 
-        FROM properties p
-        LEFT JOIN reviews r ON p.id = r.property_id
-        LEFT JOIN properties_type pt ON p.type_id = pt.id 
-        ${whereClause}
-        GROUP BY p.id
-        ORDER BY p.likes DESC
-        LIMIT ${parseInt(limit)} OFFSET ${offset}
+    // Query dati con paginazione
+    const dataQuery = `
+      SELECT 
+        p.id, p.slug, p.title, p.num_rooms, p.num_beds, p.num_bathrooms, p.square_meters, 
+        p.address, p.city, p.cover_img, p.likes, pt.type_name AS property_type,
+        COUNT(r.id) AS num_reviews, SUM(r.rating) AS total_votes 
+      FROM properties p
+      LEFT JOIN reviews r ON p.id = r.property_id
+      LEFT JOIN properties_type pt ON p.type_id = pt.id 
+      ${whereClause}
+      GROUP BY p.id
+      ORDER BY p.likes DESC
+      LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await connection.execute(query, queryParams);
+    const finalParams = [...queryParams, parseInt(limit, 10), offset];
+    const [rowsResult] = await connection.execute(dataQuery, finalParams);
+
+    const results = Array.isArray(rowsResult) ? rowsResult : [];
 
     res.status(200).json({
       message: "Ricerca completata con successo",
-      results: rows,
+      results,
       pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
+        currentPage: parseInt(page, 10),
+        totalPages: Math.ceil(total / parseInt(limit, 10)),
         totalResults: total,
-        limit: parseInt(limit)
+        limit: parseInt(limit, 10)
       }
     });
+
   } catch (error) {
-    console.error("Errore nella ricerca delle proprietà:", error);
+    console.error("❌ Errore nella ricerca delle proprietà:", error);
     next(new customError(500, "Errore del server"));
   }
 };
