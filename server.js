@@ -9,7 +9,7 @@ import multer from "multer";
 import path from "path";
 
 const app = express(); // Creazione istanza dell'app express
-const port = 3000;
+const port = 31620;
 
 // Abilita CORS per tutte le richieste
 app.use(cors());

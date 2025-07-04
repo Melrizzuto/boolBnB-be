@@ -1,18 +1,19 @@
-import mysql from "mysql2/promise";
+import mysql from "mysql2";
 
-const connection = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+const connection = mysql.createConnection({
+    host: 'yamanote.proxy.rlwy.net',
+    user: 'root',
+    password: 'qFPecktzMTmerQhCVRWgIUPHJtxbulMP',
+    database: 'boolbnb_db',
+    port: '31620'
 });
 
-try{
-    await connection.connect();
-    console.log("Connesso al database!");
-}
-catch (err) {
-    console.error("Errore di connessione al database:", err);
-}
+connection.connect((err) => {
+    if (err) {
+        console.error('Errore di connessione al database:', err.message);
+        return;
+    }
+    console.log('Connesso al database!');
+});
 
 export default connection;
