@@ -1,6 +1,6 @@
 import mysql from "mysql2";
 
-const connection = mysql.createConnection({
+const pool = mysql.createPool({
     host: 'yamanote.proxy.rlwy.net',
     user: 'root',
     password: 'qFPecktzMTmerQhCVRWgIUPHJtxbulMP',
@@ -8,12 +8,6 @@ const connection = mysql.createConnection({
     port: '31620'
 });
 
-connection.connect((err) => {
-    if (err) {
-        console.error('Errore di connessione al database:', err.message);
-        return;
-    }
-    console.log('Connesso al database!');
-});
+const connection = pool.promise();
 
 export default connection;
