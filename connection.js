@@ -1,13 +1,14 @@
 import mysql from "mysql2/promise";
 
 const connection = await mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: 'ballast.proxy.rlwy.net',
+    user: 'root',
+    password: 'mFzTyHYoByKgpuEIFikaGgkRlthGhDLC',
+    database: 'boolbnb_db',
+    port: 30109,
 });
 
-try{
+try {
     await connection.connect();
     console.log("Connesso al database!");
 }
