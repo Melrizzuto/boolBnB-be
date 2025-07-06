@@ -8,33 +8,30 @@ import cors from "cors";
 import multer from "multer";
 import path from "path";
 
-const app = express(); // Creazione istanza dell'app express
-const port = 3000;
+const app = express();
+
+// Legge la porta da Render o usa 3000 in locale
+const port = process.env.PORT || 3000;
 
 // Abilita CORS per tutte le richieste
 app.use(cors());
 
-// Imposta una cartella statica "public" per servire file statici
+// Serve file statici dalla cartella "public"
 app.use("/public", express.static(path.join(process.cwd(), "public")));
 
-// Imposta il middleware per il parsing del corpo delle richieste in formato JSON
+// Parsing JSON
 app.use(express.json());
 
+// Rotte
 app.use("/api", property_type_Router);
-
-// Registra il router delle proprietà
 app.use("/properties", router);
-
-// Registra il router delle recensioni
 app.use("/properties/:slug/reviews", reviewsRouter);
 
-// Usa il middleware per la gestione degli errori globali
+// Error handling
 app.use(errorsHandler);
-
-// Usa il middleware per gestire le richieste a rotte non definite
 app.use(notFound);
 
-// Avvia il server, ascoltando sulla porta definita
+// Start del server sulla porta corretta
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
